@@ -58,39 +58,78 @@ const memes = [
 
 const canvas = document.getElementById('roleta');
 const ctx = canvas.getContext('2d');
-const spinButton = document.getElementById('spin-btn');
+const spinBtn = document.getElementById('spin-btn');
+const memeImg = document.getElementById('meme-img');
+const memeNome = document.getElementById('meme-nome');
 
-canvas.width = 500;
-canvas.height = 500;
+const colors = ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF", "#FF9F40"];
 
-const degPerMem = 360 / memes.length;
-const memePositions = memes.map((meme, i) => i * degPerMem);
+let startAngle = 0;
+let spinAngle = 0;
+let spinning = false;
 
 function drawRoleta() {
-    const center = { x: canvas.width / 2, y: canvas.height / 2 };
-    const radius = 200;
+    const arcSize = 2 * Math.PI / memes.length;
 
-    memes.forEach((meme, i) => {
-        const startAngle = memePositions[i] * (Math.PI / 180);
-        const endAngle = (memePositions[i] + degPerMem) * (Math.PI / 180);
-
-        ctx.fillStyle = 'white';
+    for (let i = 0; i < memes.length; i++) {
+        const angle = startAngle + i * arcSize;
+        
         ctx.beginPath();
-        ctx.arc(center.x, center.y, radius, startAngle, endAngle);
-        ctx.lineTo(center.x, center.y);
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.moveTo(250, 250);
+        ctx.arc(250, 250, 200, angle, angle + arcSize);
+        ctx.lineTo(250, 250);
         ctx.fill();
-    });
+
+        ctx.save();
+        ctx.translate(250, 250);
+        ctx.rotate(angle + arcSize / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "black";
+        ctx.font = "16px Arial";
+        ctx.fillText(memes[i].nome, 190, 10);
+        ctx.restore();
+    }
 }
 
-function spinRoleta() {
-    let randomDeg = Math.floor(Math.random() * 360);
-    let winnerIndex = Math.floor(randomDeg / degPerMem);
+function rotateRoleta() {
+    if (spinning) return;
+    spinning = true;
 
-    alert(`Você ganhou o meme: ${memes[winnerIndex].nome}!`);
+    let spinTimeTotal = Math.random() * 3000 + 4000;
+    let spinTime = 0;
+    const arcSize = 2 * Math.PI / memes.length;
+
+    function rotate() {
+        spinTime += 30;
+        if (spinTime >= spinTimeTotal) {
+            stopRotate();
+            return;
+        }
+        const spinAngleDelta = (Math.random() * 10 + 10) * Math.PI / 180;
+        startAngle += spinAngleDelta;
+        draw();
+        setTimeout(rotate, 30);
+    }
+
+    function stopRotate() {
+        const degrees = startAngle * 180 / Math.PI + 90;
+        const arcd = arcSize * 180 / Math.PI;
+        const index = Math.floor((360 - degrees % 360) / arcd) % memes.length;
+
+        memeImg.src = memes[index].imagem;
+        memeNome.innerText = memes[index].nome;
+        spinning = false;
+    }
+
+    rotate();
 }
 
-spinButton.addEventListener('click', () => {
-    spinRoleta();
-});
+function draw() {
+    ctx.clearRect(0, 0, 500, 500);
+    drawRoleta();
+}
 
-drawRoleta();
+draw();
+
+spinBtn.addEventListener('click', rotateRoleta);
